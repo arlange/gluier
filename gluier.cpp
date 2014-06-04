@@ -184,7 +184,7 @@ void print_log( ostream * out ){
 
 
 /* extends a graph by one vertex, making sure 
-   that the neighborhood of the new vertex:
+   that the neighborhood (cone) of the new vertex:
      1. does not cause a triangle
      2. does not create an irredundant set of order IR
 */
@@ -215,6 +215,7 @@ void v_extend(){
     add_graph(good.to_g6());
   }
 
+  // loop through all independent sets -- each one is a possible cone
   for( int i = 0; i < k; i++ ){
     bool good_cone = true;
     s = y_g->vec_is_sets[i];
@@ -252,6 +253,8 @@ void v_extend(){
 	    vset cur_ir_pns[maxir];
 	    
 	    int cur_i = 0;
+	    // get actual vertices of the irredundant set,
+	    // and each one of their private neighborhoods
 	    for( int j = 0; j < y_order; j++){
 	      if( in_set(j, cur_ir_set )){
 		cur_ir_vs[cur_i] = j;
@@ -260,6 +263,7 @@ void v_extend(){
 	      }
 	    }
 	    
+	    // check to make sure v won't have any private neighbors
 	    bool v_not_allowed = false;
 	    for( int j = 0; j < maxir; j++ ){
 	      if( (cur_ir_pns[j] | s) == s ){
@@ -268,6 +272,9 @@ void v_extend(){
 	      }
 	    }
 	    
+	    /* if v can't be in the new irredundant set, then some other
+	       vertex of the PN that is not in the IR set might be able to use 
+	       v has a PN */
 	    bool s_okay = true;
 	    if( v_not_allowed ){
 	      for( int t = 0; t < y_order; t++ ){
@@ -316,6 +323,10 @@ void v_extend(){
   delete [] ir_tab;
 }
 
+/* 
+   Remove each vertex to create a set of (3,ir)-graphs that
+   have one less vertex
+ */
 void drop_v(){
   int num_vs = y_g->order();
   cerr << "Cone size: " << endl;
@@ -330,7 +341,10 @@ void drop_v(){
 }
 
 
-
+/*
+  Check graph to make sure it has no IR of order ir,
+  as well as no IR set of order 3 in the complement
+*/
 void filter_g(){
   bool good = true;
   bool go_to_s = !mixed;
@@ -389,6 +403,7 @@ int main( int argc, char *argv[] ){
 
   total_start = clock();
 
+  // possible different options
   mixed = false;  // m
   fix_degree = false;  
   just_count = false;  // u
@@ -406,6 +421,8 @@ int main( int argc, char *argv[] ){
   char * opts;
   char cur_opt;
 
+  // get all the options from the command line and
+  // set the flags accordingly
   bool get_more_opts = true;
   int cur_opt_i = 0;
   while( get_more_opts ){
@@ -479,7 +496,6 @@ int main( int argc, char *argv[] ){
     }
   }
 
-
   if( bad_args ){
     cerr << "BAD ARGS" << endl;
     return 0;
@@ -491,9 +507,9 @@ int main( int argc, char *argv[] ){
     cerr << "Irredundant Ramsey Numbers" << endl;
   }
 
+  /////// done setting up options and needed files
 
-  // set up log
-  // log_file = out_file + ".log";
+  // set up log variables
   avg_time = 0; min_time = DBL_MAX; max_time = 0;
   avg_numg = 0; min_numg = DBL_MAX; max_numg = 0;
   avg_conesize = 0; min_conesize = DBL_MAX; max_conesize = 0;
@@ -508,6 +524,8 @@ int main( int argc, char *argv[] ){
   vector<string> y_graphs;
   string g_string;
 
+
+  // get input/output files
   ifstream ifs ( in_file.c_str() );
   if( !ifs.is_open() ){
     cerr << "Error opening file " + in_file << endl;
@@ -531,16 +549,17 @@ int main( int argc, char *argv[] ){
       return 0;
     } //  */
   }
+  // done with files, let's start!!!
+
 
   cerr << "****************" << endl;
   cerr << "ir = " << ir << endl;
-
 
   filter_num_ir = 0; filter_num_tri = 0; filter_num_c6 = 0;
   
   g_count = 0;
 
-
+  // read through each g6 string of input file
   while( getline( ifs, g_string ) ){ 
     g_count++;
 
