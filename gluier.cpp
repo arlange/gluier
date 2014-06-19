@@ -6,6 +6,7 @@
 #include <time.h>
 #include <math.h>
 #include <list>
+#include <map>
 #include <limits>
 #include <string>
 
@@ -31,6 +32,7 @@ bool check_all;
 int y_order;
 
 list<string> * g_list;
+map<string,int> * g_map;
 
 int g_count;
 
@@ -53,6 +55,9 @@ bool display_updates; //p
 bool func_v_extend; // v
 bool func_drop_v; // d
 bool func_filter; // f
+bool func_glue; // g
+
+bool use_map; // a
 
 bool store_and_sort;
 
@@ -65,12 +70,11 @@ int filter_num_c6;
 
 int g_out;
 
-const double DBL_MAX = numeric_limits<double>::max( );\
+const double DBL_MAX = numeric_limits<double>::max( );
 
 
-/* converts a string of a graph to its g6 canonical labeling
-   and adds it to the list */
-void add_graph( string g_string ){
+/* converts a string of a graph to its g6 canonical labeling*/
+string convert_gstring( string g_string ){
   int m = 1;
   int len = g_string.length();
   char * cstr = new char[len];
@@ -84,9 +88,37 @@ void add_graph( string g_string ){
   fcanonise(inG, m, n, outG, NULL, 0 );
   char * out_cstr = ntog6( outG, m, n );
   string can_g( out_cstr );
-  g_list->push_back( can_g.substr(0,can_g.size()-1));
   delete [] cstr;
+  return can_g.substr(0,can_g.size()-1);
 }
+
+void add_to_map( string g_string ){
+  g_map->insert(make_pair(convert_gstring(g_string),1));
+}
+
+
+void print_from_map( ostream * out ){
+  g_out = 0;
+  for( map<string,int>::iterator it = g_map->begin();
+       it != g_map->end(); it++ ){
+    *out << it->first << endl;
+    g_out++;
+  }
+}
+
+void add_to_list( string g_string ){
+  g_list->push_back( convert_gstring( g_string ) );
+}
+
+
+/* adds converted string to the list */
+void add_graph( string g_string ){
+  if( use_map )
+    add_to_map( g_string );
+  else
+    add_to_list( g_string );
+}
+
 
 /* sorts the list and counts the unique strings */
 void count_graphs( ){
@@ -110,22 +142,27 @@ void count_graphs( ){
 
 /* sorts the list and prints the unique strings */
 void print_graphs( ostream * out ){
-  g_out = 0;
-  if( !g_list->empty() ){
-    g_list->sort();
-    string prev = g_list->front();
-    *out << prev << endl;
-    g_out++;
-
-    list<string>::iterator it = g_list->begin();
-    it++;
-
-    for( it; it != g_list->end(); it++ ){
-      if( it->compare( prev ) != 0  ){
-	g_out++;
-	*out << *it << endl;
+  if( use_map ){
+    print_from_map( out );
+  }
+  else{
+    g_out = 0;
+    if( !g_list->empty() ){
+      g_list->sort();
+      string prev = g_list->front();
+      *out << prev << endl;
+      g_out++;
+      
+      list<string>::iterator it = g_list->begin();
+      it++;
+      
+      for( it; it != g_list->end(); it++ ){
+	if( it->compare( prev ) != 0  ){
+	  g_out++;
+	  *out << *it << endl;
+	}
+	prev = *it;
       }
-      prev = *it;
     }
   }
 }
@@ -142,7 +179,7 @@ void print_log( ostream * out ){
   *out << "Max = " << max_time << endl;
   *out << endl;
 
-  if( func_v_extend ){
+  if( func_glue ){
     *out << "Number of Graphs Glued" << endl;
     *out << "Avg = " << avg_numg << endl;
     *out << "Min = " << min_numg << endl;
@@ -412,7 +449,9 @@ int main( int argc, char *argv[] ){
   func_v_extend = false; // v
   func_drop_v = false; // d
   func_filter = false; // f
+  func_glue = false;  // g
   display_updates = false; // p
+  use_map = false;    // a
   store_and_sort = true;
 
   bool bad_args = false;
@@ -441,6 +480,7 @@ int main( int argc, char *argv[] ){
 	case 'f': func_filter = true; break;
 	case 'p': display_updates = true; break;
 	case 'o': store_and_sort = false; break;
+	case 'a': use_map = true; break;
 	default: 
 	  cerr << "Error: -" << *opts << " is not an option." << endl;
 	  bad_args = true;
@@ -463,6 +503,7 @@ int main( int argc, char *argv[] ){
   }
 
   g_list = new list<string>();
+  g_map = new map<string,int>();
 
   int num_funcs = func_v_extend + func_drop_v + func_filter;
   if( num_funcs > 1 && !bad_args ){
@@ -636,6 +677,7 @@ int main( int argc, char *argv[] ){
   delete [] max_ir_counts;
 
   delete g_list;
+  delete g_map;
 
   cerr << endl;
   cerr << "Graph count = " << g_out << endl;
