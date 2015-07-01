@@ -360,6 +360,14 @@ void v_extend(){
   delete [] ir_tab;
 }
 
+
+
+void glue(int d){
+
+
+}
+
+
 /* 
    Remove each vertex to create a set of (3,ir)-graphs that
    have one less vertex
@@ -441,17 +449,17 @@ int main( int argc, char *argv[] ){
   total_start = clock();
 
   // possible different options
-  mixed = false;  // m
-  fix_degree = false;  
-  just_count = false;  // u
-  std_not_file = false; // s
-  no_log = true; // l
-  func_v_extend = false; // v
-  func_drop_v = false; // d
-  func_filter = false; // f
-  func_glue = false;  // g
+  mixed = false;           // m
+  fix_degree = false;      
+  just_count = false;      // u
+  std_not_file = false;    // s
+  no_log = true;           // l
+  func_v_extend = false;   // v
+  func_drop_v = false;     // d
+  func_filter = false;     // f
+  func_glue = false;       // g
   display_updates = false; // p
-  use_map = false;    // a
+  use_map = false;         // a
   store_and_sort = true;
 
   bool bad_args = false;
@@ -459,6 +467,7 @@ int main( int argc, char *argv[] ){
   string in_file, out_file, log_file;
   char * opts;
   char cur_opt;
+  int degree;
 
   // get all the options from the command line and
   // set the flags accordingly
@@ -478,6 +487,7 @@ int main( int argc, char *argv[] ){
 	case 'v': func_v_extend = true; break;
 	case 'd': func_drop_v = true; break;
 	case 'f': func_filter = true; break;
+	case 'g': func_glue = true; break;
 	case 'p': display_updates = true; break;
 	case 'o': store_and_sort = false; break;
 	case 'a': use_map = true; break;
@@ -505,7 +515,7 @@ int main( int argc, char *argv[] ){
   g_list = new list<string>();
   g_map = new map<string,int>();
 
-  int num_funcs = func_v_extend + func_drop_v + func_filter;
+  int num_funcs = func_v_extend + func_drop_v + func_filter + func_glue;
   if( num_funcs > 1 && !bad_args ){
     cerr << "Error: -vdf are incompatible." << endl;
     bad_args = true;
